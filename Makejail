@@ -1,0 +1,84 @@
+# Makejail - 最小限の PostgreSQL jail
+
+# ========================
+#  設定ゾーン（ARG）
+# ========================
+
+ARG pg_version
+ARG db_data_dir
+ARG PASSWORD_DIR
+ARG pkgcache
+ARG allowed_cidr_list
+
+# ========================
+#  build stage（構築）
+# ========================
+STAGE build
+
+# AppJail テンプレート指定
+OPTION template=${APPJAIL_PWD}/.pgsql-template.conf
+
+OPTION overwrite=force
+OPTION boot
+OPTION start
+
+# --- ストレージを jail へ見せる ---
+# IP-SAN 上のデータ領域を PostgreSQL データディレクトリにマウント
+# （ホスト側で san_data_src がマウント済みであることが前提）
+OPTION fstab=${db_data_dir} /var/db/postgres nullfs rw 0 0
+OPTION fstab=${pkgcache} /var/cache/pkg nullfs rw 0 0
+
+CMD service sendmail forcestop || true
+SYSRC sendmail_enable="NONE"
+
+# --- PostgreSQL のインストール ---
+PKG --update
+PKG postgresql${pg_version}-server
+PKG postgresql${pg_version}-client
+
+# --- PostgreSQL サービス設定 ---
+SYSRC postgresql_enable=YES
+SYSRC postgresql_initdb_flags="--data-checksums"
+# 既存のデータディレクトリがあれば initdb は失敗するが、
+# その場合は既存データを使うので問題なし（データ保護）
+CMD --jexec service postgresql initdb || true
+
+COPY --verbose --glob-left .sh /root
+COPY --verbose --glob-left .awk /root
+COPY --verbose --glob-left .spec /root
+COPY --verbose --glob-left .psql /root
+COPY --verbose ${PASSWORD_DIR} /root/services
+CMD rm /root/services/*.psql || true
+COPY --verbose --glob-right ./services/ /root/services
+#CMD ls -l /root/services/
+COPY --verbose certs/server.crt /var/db/postgres/data${pg_version}/
+COPY --verbose certs/server.key /var/db/postgres/data${pg_version}/
+CMD sh /root/setup_certs.sh /var/db/postgres/data${pg_version}
+CMD sh /root/manage_conf.sh /root/postgresql.spec /var/db/postgres/data${pg_version}/postgresql.conf
+CMD sh /root/manage_conf.sh /root/pg_ident.spec /var/db/postgres/data${pg_version}/pg_ident.conf
+CMD [ -f "/var/db/postgres/data${pg_version}/pg_hba.conf.orig" ] || cp "/var/db/postgres/data${pg_version}/pg_hba.conf" "/var/db/postgres/data${pg_version}/pg_hba.conf.orig"
+COPY --verbose pg_hba.conf "/var/db/postgres/data${pg_version}/pg_hba.conf"
+CMD for cidr in ${allowed_cidr_list}; do echo "hostssl all all $cidr scram-sha-256" >> /var/db/postgres/data${pg_version}/pg_hba.conf; done
+CMD echo "host all all 0.0.0.0/0 reject" >> /var/db/postgres/data${pg_version}/pg_hba.conf
+CMD echo "host all all ::0/0 reject" >> /var/db/postgres/data${pg_version}/pg_hba.conf
+SERVICE postgresql start
+CMD cd /root; sh /root/pg-init.sh
+
+#
+# 初期接続方法:
+# appjail cmd jexec pgsql -U postgres psql
+# psql -U postgres -h /usr/local/appjail/jails/pgsql/jail/tmp
+
+# ========================
+#  start stage（起動時）
+# ========================
+STAGE start
+CMD service postgresql start || true
+
+# ========================
+#  stop stage（任意）
+# ========================
+STAGE stop
+
+# 停止時にきれいに postgresql を落とす（失敗しても jail 停止は続行）
+CMD service postgresql forcestop || true

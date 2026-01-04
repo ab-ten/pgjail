@@ -1,0 +1,5 @@
+\unset db_name
+\set db_user postgres
+\set db_pass `head -n 1 "$PASSWD_FILE"`
+
+\ir ../template-service_common.psql

@@ -1,0 +1,38 @@
+# render TEMPLATE
+
+render() {
+  if [ $# -ne 1 ]; then
+    echo "usage: render TEMPLATE" >&2
+    return 2
+  fi
+
+  template=$1
+
+  # 呼び出し元のシェル状態（set -a 等）を汚さないためサブシェルで隔離
+  (
+    set -eu
+
+    if [ ! -f "$template" ]; then
+      echo "render: missing template: $template" >&2
+      exit 1
+    fi
+
+    # テンプレ本文と衝突しにくい終端語を作り、万一衝突したら伸ばす
+    term="__EOT_${$}_$(date +%s)__"
+    while grep -Fxq "$term" "$template"; do
+      term="${term}_XXXX"
+    done
+
+    # 一時スクリプトを作る（mktemp(1)）
+    tmp="$(mktemp -t .render.XXXXXX)"
+    trap 'rm -f "$tmp"' EXIT HUP INT TERM
+
+    {
+      printf 'cat <<%s\n' "$term"
+      cat "$template"
+      printf '\n%s\n' "$term"
+    } > "$tmp"
+
+    /bin/sh -ue "$tmp"
+  )
+}

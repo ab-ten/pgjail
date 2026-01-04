@@ -1,0 +1,29 @@
+-- 必須：db_user, db_pass
+\if :{?db_user}
+\else
+  \echo 'ERROR: db_user is not set'
+  \quit
+\endif
+
+\if :{?db_pass}
+\else
+  \echo 'ERROR: db_pass is not set'
+  \quit
+\endif
+
+-- ROLEが無ければ作る（あれば何もしない）
+SELECT format('CREATE ROLE %I LOGIN', :'db_user')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'db_user');
+\gexec
+
+-- パスワードは望ましい状態へ寄せる（冪等）
+ALTER ROLE :"db_user" WITH PASSWORD :'db_pass';
+
+-- db_name が定義されている時だけ DB作成と権限
+\if :{?db_name}
+  SELECT format('CREATE DATABASE %I OWNER %I', :'db_name', :'db_user')
+  WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name');
+  \gexec
+
+  GRANT ALL PRIVILEGES ON DATABASE :"db_name" TO :"db_user";
+\endif

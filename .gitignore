@@ -1,0 +1,6 @@
+*~
+/services/*.passwd
+/certs/*.crt
+/certs/*.key
+/.build.env
+/.pgsql-template.conf

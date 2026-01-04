@@ -1,0 +1,5 @@
+\set db_name nextcloud
+\set db_user nextcloud
+\set db_pass `head -n 1 "$PASSWD_FILE"`
+
+\ir ../template-service_common.psql
