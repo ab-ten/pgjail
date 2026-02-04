@@ -11,9 +11,21 @@
   \quit
 \endif
 
--- オプション変数を中間変数に展開（未定義なら空文字）
+-- db_role_inherit: INHERIT/NOINHERIT のみ許可して句を生成（未指定なら空）
 \if :{?db_role_inherit}
-  SELECT format(' %s', :'db_role_inherit') AS clause \gset option_db_role_inherit_
+  SELECT
+    CASE upper(:'db_role_inherit')
+      WHEN 'INHERIT'   THEN ' INHERIT'
+      WHEN 'NOINHERIT' THEN ' NOINHERIT'
+      ELSE NULL
+    END AS clause
+  \gset option_db_role_inherit_
+
+  \if :{?option_db_role_inherit_clause}
+  \else
+    \echo 'ERROR: db_role_inherit must be INHERIT or NOINHERIT'
+    \quit
+  \endif
 \else
   \set option_db_role_inherit_clause ''
 \endif
