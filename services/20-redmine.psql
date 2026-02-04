@@ -1,0 +1,7 @@
+\set db_name redmine
+\set db_user redmine
+\set db_pass `head -n 1 "$PASSWD_FILE"`
+\set db_role_inherit NOINHERIT
+\set db_encoding UTF8
+
+\ir ../template-service_common.psql

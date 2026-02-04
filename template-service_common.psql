@@ -11,8 +11,33 @@
   \quit
 \endif
 
+-- db_role_inherit: INHERIT/NOINHERIT のみ許可して句を生成（未指定なら空）
+\if :{?db_role_inherit}
+  SELECT
+    CASE upper(:'db_role_inherit')
+      WHEN 'INHERIT'   THEN ' INHERIT'
+      WHEN 'NOINHERIT' THEN ' NOINHERIT'
+      ELSE NULL
+    END AS clause
+  \gset option_db_role_inherit_
+
+  \if :{?option_db_role_inherit_clause}
+  \else
+    \echo 'ERROR: db_role_inherit must be INHERIT or NOINHERIT'
+    \quit
+  \endif
+\else
+  \set option_db_role_inherit_clause ''
+\endif
+
+\if :{?db_encoding}
+  SELECT format(' ENCODING=%L', :'db_encoding') AS clause \gset option_db_encoding_
+\else
+  \set option_db_encoding_clause ''
+\endif
+
 -- ROLEが無ければ作る（あれば何もしない）
-SELECT format('CREATE ROLE %I LOGIN', :'db_user')
+SELECT format('CREATE ROLE %I LOGIN%s', :'db_user', :'option_db_role_inherit_clause')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'db_user');
 \gexec
 
@@ -21,7 +46,7 @@ ALTER ROLE :"db_user" WITH PASSWORD :'db_pass';
 
 -- db_name が定義されている時だけ DB作成と権限
 \if :{?db_name}
-  SELECT format('CREATE DATABASE %I OWNER %I', :'db_name', :'db_user')
+  SELECT format('CREATE DATABASE %I OWNER %I%s', :'db_name', :'db_user', :'option_db_encoding_clause')
   WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name');
   \gexec
 
