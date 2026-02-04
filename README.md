@@ -33,6 +33,7 @@ FreeBSD の AppJail を使って PostgreSQL サーバーを jail 環境で構築
 sudo mkdir -p /root/pgjail-passwd
 echo "your_secure_password" | sudo tee /root/pgjail-passwd/00-postgres.passwd
 echo "nextcloud_password" | sudo tee /root/pgjail-passwd/10-nextcloud.passwd
+echo "redmine_password" | sudo tee /root/pgjail-passwd/20-redmine.passwd
 sudo chmod 600 /root/pgjail-passwd/*.passwd
 ```
 
@@ -94,6 +95,7 @@ sudo sh build-pgsql.sh
 └── services/
     ├── 00-postgres.psql
     └── 10-nextcloud.psql
+    └── 20-redmine.psql
 ```
 
 ## サービスの追加方法
