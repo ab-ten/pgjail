@@ -110,6 +110,11 @@ sudo sh build-pgsql.sh
 \ir ../template-service_common.psql
 ```
 
+利用できる追加パラメータ:
+
+- `db_role_inherit`: `INHERIT` または `NOINHERIT` を指定すると、`CREATE ROLE` に同名の句を付与します。未指定なら何も付与しません。
+- `db_encoding`: `UTF8` などの文字エンコーディングを指定すると、`CREATE DATABASE` に `ENCODING=...` を付与します。未指定なら何も付与しません。
+
 2. パスワードファイルを作成:
 
 ```bash
