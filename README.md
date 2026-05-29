@@ -34,6 +34,7 @@ sudo mkdir -p /root/pgjail-passwd
 echo "your_secure_password" | sudo tee /root/pgjail-passwd/00-postgres.passwd
 echo "nextcloud_password" | sudo tee /root/pgjail-passwd/10-nextcloud.passwd
 echo "redmine_password" | sudo tee /root/pgjail-passwd/20-redmine.passwd
+echo "bitwarden_password" | sudo tee /root/pgjail-passwd/30-bitwarden.passwd
 sudo chmod 600 /root/pgjail-passwd/*.passwd
 ```
 
@@ -96,6 +97,7 @@ sudo sh build-pgsql.sh
     ├── 00-postgres.psql
     └── 10-nextcloud.psql
     └── 20-redmine.psql
+    └── 30-bitwarden.psql
 ```
 
 ## サービスの追加方法
