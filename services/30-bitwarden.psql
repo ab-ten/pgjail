@@ -3,3 +3,5 @@
 \set db_pass `head -n 1 "$PASSWD_FILE"`
 
 \ir ../template-service_common.psql
+
+ALTER ROLE :"db_user" IN DATABASE :"db_name" SET TimeZone TO 'UTC';
